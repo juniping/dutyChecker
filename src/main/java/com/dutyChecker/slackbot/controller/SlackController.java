@@ -1,24 +1,37 @@
 package com.dutyChecker.slackbot.controller;
 
-import com.dutyChecker.slackbot.service.SlackService;
+import com.dutyChecker.slackbot.service.DutyInfoService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/slack")
 public class SlackController {
 
-    private final SlackService slackService;
+    private final DutyInfoService dutyInfoService;
 
-    public SlackController(SlackService slackService) {
-        this.slackService = slackService;
+    public SlackController(DutyInfoService dutyInfoService) {
+        this.dutyInfoService = dutyInfoService;
     }
 
     @PostMapping("/command")
-    public String handleCommand(@RequestParam("text") String commandText) {
-        if ("당직정보".equals(commandText)) {
-            slackService.sendMessage("현재 당직 정보를 조회 중입니다...");
-            return "당직 정보를 Slack 채널에 전송했습니다.";
+    public String handleCommand(
+            @RequestParam("command") String command) {
+        
+        // 즉시 응답 반환
+        String immediateResponse = "명령어를 처리 중입니다...";
+        
+        // 비동기로 메시지 전송
+        if ("/당직보고".equals(command)) {
+            new Thread(() -> {
+                try {
+                    String dutyInfo = dutyInfoService.getDutyInfo();
+                    dutyInfoService.sendMessage(dutyInfo);
+                } catch (Exception e) {
+                    System.err.println("메시지 전송 중 오류 발생: " + e.getMessage());
+                }
+            }).start();
         }
-        return "알 수 없는 명령어입니다.";
+        
+        return immediateResponse;
     }
 }
